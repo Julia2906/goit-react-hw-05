@@ -1,19 +1,39 @@
 import axios from 'axios';
 
-const API_TOKEN =
-  'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZGM2ZjRlYTFhNWQ0Y2Q4ZjJjYzBmOTZmNGQ0YzY0ZSIsIm5iZiI6MTc0NDIxODg5OC4xMTAwMDAxLCJzdWIiOiI2N2Y2YWIxMmVhODBkODUxNzU5OTNhMTMiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.oKTyEk8ckoVTPHxN0g1QlVeO09e98owh3x7O2NN-AAI';
+const apiKey = import.meta.env.VITE_API_KEY;
+axios.defaults.baseURL = 'https://api.themoviedb.org/3';
 
-const url = 'https://api.themoviedb.org/3';
-
-const options = {
-  headers: {
-    Authorization: API_TOKEN,
-  },
+export const trendingMoviesToday = async () => {
+  return await axios.get('/trending/movie/day', {
+    headers: { accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  });
 };
 
-export const fetchMovie = async () => {
-  const response = await axios
-    .get(url, options)
-    .then(response => console.log(response))
-    .catch(err => console.error(err));
+export const castMovie = async movieId => {
+  return await axios.get(`/movie/${movieId}/credits`, {
+    headers: { accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  });
+};
+
+export const reviewsMovie = async movieId => {
+  return await axios.get(`/movie/${movieId}/reviews`, {
+    headers: { accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  });
+};
+
+export const searchMovie = async query => {
+  return await axios.get(`/search/movie`, {
+    params: { query },
+    headers: { accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  });
+};
+
+export const ItemMovieBaseUrl = 'https://image.tmdb.org/t/p/';
+export const ItemMovieBaseSize = 'w300/';
+export const CastBaseSize = 'w92';
+
+export const ItemMovieDetails = async movieId => {
+  return await axios.get(`/movie/${movieId}`, {
+    headers: { accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  });
 };
