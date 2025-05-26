@@ -1,70 +1,63 @@
-import { useEffect, useRef, useState } from 'react';
-import css from './MovieDetailsPage.module.css';
 import {
-  NavLink,
-  useParams,
-  Outlet,
   Link,
+  NavLink,
+  Outlet,
   useLocation,
+  useNavigate,
+  useParams,
 } from 'react-router-dom';
+import {
+  ItemMovieBaseSize,
+  ItemMovieBaseUrl,
+  ItemMovieDetails,
+} from '../../SearchMovieService';
+import { useEffect, useRef, useState } from 'react';
 
-import MovieDetail from '../../components/MovieDetail/MovieDetail';
-import Loader from '../../components/Loader/Loader';
+export default function MovieDetailsPage() {
+  const { movieId } = useParams();
 
-import { fetchDetailsFilm } from '../../films-api';
-
-const MovieDetailsPage = () => {
+  console.log(movieId);
   const location = useLocation();
-  const backLinkRef = useRef(location.state?.from ?? '/movies');
-  const { filmId } = useParams();
-  const [film, setFilm] = useState(null);
-  const [isLoading, setLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
+  const navigate = useNavigate();
+  const backLink = useRef(location.state?.from || '/');
+
+  const [movie, setMovie] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    setIsError(false);
-    fetchDetailsFilm(filmId)
-      .then(film => {
-        setFilm(film);
-      })
-      .catch(error => {
-        setIsError(true);
-      })
-      .finally(() => setLoading(false));
-  }, [filmId]);
+    async function getMovieDetails() {
+      try {
+        const responce = await ItemMovieDetails(movieId);
+        setMovie(responce.data);
+        console.log(responce.data);
+      } catch (error) {
+        console.log({ error });
+      }
+    }
+    getMovieDetails();
+  }, [movieId]);
 
   return (
-    <div className={css.box}>
-      {isLoading && <Loader loading={isLoading} />}
-      {!isLoading && isError && <p>Something went wrong, try again later</p>}
-      <Link to={backLinkRef.current}>Go back</Link>
-      {film && <MovieDetail film={film} />}
-      <ul className={css.nav_list}>
-        <li>
-          <NavLink
-            to="cast"
-            className={({ isActive }) =>
-              isActive ? `${css.nav_link} ${css.active}` : css.nav_link
-            }
-          >
-            Cast list
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to="reviews"
-            className={({ isActive }) =>
-              isActive ? `${css.nav_link} ${css.active}` : css.nav_link
-            }
-          >
-            Reviews
-          </NavLink>
-        </li>
-      </ul>
+    <div>
+      <button onClick={() => navigate(backLink.current)}>Go back</button>
+      {movie && (
+        <>
+          <img
+            src={`${ItemMovieBaseUrl}${ItemMovieBaseSize}${movie.poster_path}`}
+            alt={movie.title}
+          />
+          <h2>
+            {movie.original_title} ({new Date(movie.release_date).getFullYear()}
+            )
+          </h2>
+          <h3>{movie.genres.map(genre => genre.name).join(', ')}</h3>
+        </>
+      )}
+      <nav>
+        <NavLink to="cast">Cast</NavLink>
+        <NavLink to="reviews">Reviews</NavLink>
+      </nav>
+
       <Outlet />
     </div>
   );
-};
-
-export default MovieDetailsPage;
+}

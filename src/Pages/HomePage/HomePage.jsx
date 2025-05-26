@@ -1,33 +1,27 @@
 import { useEffect, useState } from 'react';
-import css from './HomePage.module.css';
+import { trendingMoviesToday } from '../../SearchMovieService';
 import MovieList from '../../components/MovieList/MovieList';
-import { fetchFilmList } from '../../films-api';
-import Loader from '../../components/Loader/Loader';
 
 export default function HomePage() {
-  const [films, setFilms] = useState([]);
-  const [isLoading, setLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
+  const [movies, setMovies] = useState([]);
 
   useEffect(() => {
-    setLoading(true);
-    setIsError(false);
-    fetchFilmList()
-      .then(data => {
-        setFilms(data.results);
-        setIsError(false);
-      })
-      .catch(error => {
-        setIsError(true);
-      })
-      .finally(() => setLoading(false));
+    async function dataTrendingMovies() {
+      try {
+        const response = await trendingMoviesToday();
+        setMovies(response.data.results);
+        console.log(response.data.results);
+      } catch (error) {
+        console.log({ error });
+      }
+    }
+    dataTrendingMovies();
   }, []);
+
   return (
-    <div className={css.HomePage}>
-      <h2>Топ фільмів на сьогодні</h2>
-      {isLoading && <Loader loading={isLoading} />}
-      {!isLoading && isError && <p>Something went wrong, try again later</p>}
-      {films.length > 0 && <MovieList films={films} />}
+    <div>
+      <p>Trending today</p>
+      {movies.length > 0 && <MovieList movies={movies} />}
     </div>
   );
 }

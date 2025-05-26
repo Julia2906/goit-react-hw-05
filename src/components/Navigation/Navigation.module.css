@@ -1,15 +1,21 @@
-.nav {
+.container {
+  padding: 10px;
+  background-color: blanchedalmond;
+  position: fixed;
+  top: 0;
+
+  width: 100%;
+}
+
+.navList {
   display: flex;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: 10px;
+  margin-left: 50px;
 }
 
 .link {
-  text-decoration: none;
   color: black;
 }
-
 .isActive {
-  color: red;
-  text-decoration: underline;
+  color: brown;
 }

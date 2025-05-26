@@ -1,73 +1,67 @@
-import { useSearchParams } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useDebounce } from 'use-debounce';
-import { fetchFilmSearcht } from '../../films-api';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { searchMovie } from '../../SearchMovieService';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import MovieList from '../../components/MovieList/MovieList';
-import Loader from '../../components/Loader/Loader';
-import Search from '../../components/Search/Search';
 
-const MoviesPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const query = searchParams.get('query') ?? '';
-  const [debounceQuery] = useDebounce(query, 1000);
+export default function MoviesPage() {
   const [movies, setMovies] = useState([]);
-  const [isLoading, setLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const changeSearchQuery = event => {
-    const newQuery = event.target.value;
-    const nextSearchParams = new URLSearchParams(searchParams);
-
-    if (newQuery !== '') {
-      nextSearchParams.set('query', newQuery);
-    } else {
-      nextSearchParams.delete('query');
-    }
-    setSearchParams(nextSearchParams);
-  };
-
-  const handleSubmit = event => {
-    event.preventDefault();
-  };
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
-    if (debounceQuery.trim() === '') {
+    const querySearch = searchParams.get('query') || '';
+    setQuery(querySearch);
+
+    if (!querySearch) {
       setMovies([]);
-      setIsError(false);
       return;
     }
-    setLoading(true);
-    setIsError(false);
-    fetchFilmSearcht(debounceQuery)
-      .then(data => {
-        setMovies(data.results);
-        setIsError(false);
-      })
-      .catch(error => {
-        setIsError(true);
-      })
-      .finally(() => setLoading(false));
-  }, [debounceQuery]);
+
+    async function fetchMovies() {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await searchMovie(querySearch);
+        setMovies(response.data.results);
+      } catch (err) {
+        setError('Failed to fetch movies. Try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchMovies();
+  }, [searchParams]);
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    if (!query.trim()) return;
+    setSearchParams({ query });
+  }
 
   return (
-    <>
-      <Search
-        query={query}
-        onChange={changeSearchQuery}
-        onSubmit={handleSubmit}
-      />
-      {isLoading && <Loader loading={isLoading} />}
-      {!isLoading && isError && <p>Something went wrong, try again later</p>}
-      {!isLoading &&
-        !isError &&
-        movies.length === 0 &&
-        debounceQuery.trim() !== '' && (
-          <p>No movies found. Try another query.</p>
-        )}
-      {movies.length > 0 && <MovieList films={movies} />}
-    </>
-  );
-};
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search movie"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
+        <button type="submit">Search</button>
+      </form>
 
-export default MoviesPage;
+      {loading && <p>Loading...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {movies.length > 0 && (
+        <MovieList movies={movies} state={{ from: location }} />
+      )}
+    </div>
+  );
+}
