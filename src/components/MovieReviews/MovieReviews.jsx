@@ -1,39 +1,51 @@
-import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { reviewsMovie } from '../../SearchMovieService';
+import css from './MovieReviews.module.css';
+import { useEffect, useState } from 'react';
+import { fetchMovieReviews } from '../../api/api';
+
+const DEFAULT_POSTER =
+  'https://upload.wikimedia.org/wikipedia/commons/f/fc/No_picture_available.png';
 
 export default function MovieReviews() {
   const { movieId } = useParams();
-  console.log(movieId);
-
-  const [reviews, setReviews] = useState([]);
+  const [reviews, setReviews] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function dataReviewsMovie() {
+    async function fetchReviewsForMovie() {
       try {
-        const responce = await reviewsMovie(movieId);
-        setReviews(responce.data.results);
-        console.log(responce.data.results);
+        setLoading(true);
+
+        const [detailReview] = await Promise.all([fetchMovieReviews(movieId)]);
+
+        setReviews(detailReview.data.reviews.results);
       } catch (error) {
-        console.log({ error });
+      } finally {
+        setLoading(false);
       }
     }
-    dataReviewsMovie();
+    fetchReviewsForMovie();
   }, [movieId]);
 
   return (
-    <div>
-      {reviews.length > 0 ? (
-        <ul>
-          {reviews.map(review => (
-            <li key={review.id}>
-              <h3>{review.autor}</h3>
-              <p>{review.content}</p>
-            </li>
-          ))}
+    <div className="container">
+      {loading && <strong>Loading reviews...</strong>}
+
+      {!loading && reviews?.length > 0 && (
+        <ul className={css.wrap}>
+          {reviews.map(({ id, author, content }) => {
+            return (
+              <li key={id}>
+                <h4>Author: {author}</h4>
+                <p>{content}</p>
+              </li>
+            );
+          })}
         </ul>
-      ) : (
-        'No reviews'
+      )}
+
+      {!loading && reviews?.length === 0 && (
+        <strong>We don't have any reviews for this movie.</strong>
       )}
     </div>
   );

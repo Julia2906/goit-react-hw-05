@@ -1,51 +1,62 @@
-import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import {
-  CastBaseSize,
-  castMovie,
-  ItemMovieBaseUrl,
-} from '../../SearchMovieService';
+import css from './MovieCast.module.css';
+import { useEffect, useState } from 'react';
+import { fetchMovieCredits } from '../../api/api';
+
+const DEFAULT_POSTER =
+  'https://upload.wikimedia.org/wikipedia/commons/f/fc/No_picture_available.png';
+
+const BASE_POSTER_URL = 'https://image.tmdb.org/t/p/w200';
 
 export default function MovieCast() {
   const { movieId } = useParams();
-  console.log(movieId);
-
-  const [cast, setCast] = useState([]);
+  const [credits, setCredits] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function dataCastMovie() {
+    async function fetchMovieCast() {
       try {
-        const response = await castMovie(movieId);
-        setCast(response.data.cast);
-        console.log(response.data.cast);
+        setLoading(true);
+
+        const castDetails = await fetchMovieCredits(movieId);
+        setCredits(castDetails.data.credits.cast);
       } catch (error) {
-        console.log({ error });
+        console.log('error', error);
+      } finally {
+        setLoading(false);
       }
     }
-    dataCastMovie();
+    fetchMovieCast();
   }, [movieId]);
 
   return (
-    <div>
-      {cast ? (
-        <ul>
-          {cast.map(actor => (
-            <li key={actor.id}>
-              <img
-                src={
-                  actor.profile_path
-                    ? `${ItemMovieBaseUrl}${CastBaseSize}${actor.profile_path}`
-                    : noImage
-                }
-                alt={actor.name}
-                style={{ width: '92px', objectFit: 'cover' }}
-              />
-              {actor.name} — {actor.character}
-            </li>
-          ))}
-        </ul>
+    <div className="container">
+      {loading ? (
+        <strong>Loading cast...</strong>
       ) : (
-        <p>Loading cast...</p>
+        <ul className={css.wrap}>
+          {credits && credits.length > 0 ? (
+            credits.map(({ id, name, character, profile_path }) => (
+              <li key={id} className={css.item}>
+                <div>
+                  <img
+                    src={
+                      profile_path
+                        ? `${BASE_POSTER_URL}${profile_path}`
+                        : DEFAULT_POSTER
+                    }
+                    alt={name}
+                    width={300}
+                  />
+                  <h4>{name}</h4>
+                  <p>Character: {character}</p>
+                </div>
+              </li>
+            ))
+          ) : (
+            <strong>We don't have any cast info for this movie</strong>
+          )}
+        </ul>
       )}
     </div>
   );

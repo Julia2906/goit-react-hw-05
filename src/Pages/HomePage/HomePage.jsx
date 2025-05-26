@@ -1,27 +1,26 @@
 import { useEffect, useState } from 'react';
-import { trendingMoviesToday } from '../../SearchMovieService';
+import { fetchMoviePerDay } from '../../api/api';
 import MovieList from '../../components/MovieList/MovieList';
 
 export default function HomePage() {
-  const [movies, setMovies] = useState([]);
+  const [collection, setCollection] = useState([]);
 
   useEffect(() => {
-    async function dataTrendingMovies() {
+    async function fetchMoviesData() {
       try {
-        const response = await trendingMoviesToday();
-        setMovies(response.data.results);
-        console.log(response.data.results);
+        const responce = await fetchMoviePerDay();
+        setCollection(responce.data.results);
       } catch (error) {
-        console.log({ error });
+        console.log(' error', error);
       }
     }
-    dataTrendingMovies();
+    fetchMoviesData();
   }, []);
 
   return (
-    <div>
-      <p>Trending today</p>
-      {movies.length > 0 && <MovieList movies={movies} />}
+    <div className="container">
+      <h2>Trending today</h2>
+      {collection.length > 0 && <MovieList collection={collection} />}
     </div>
   );
 }

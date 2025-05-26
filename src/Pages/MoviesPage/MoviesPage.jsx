@@ -1,67 +1,73 @@
 import { useEffect, useState } from 'react';
-import { searchMovie } from '../../SearchMovieService';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import css from './MoviesPage.module.css';
+import { Formik, Field, Form } from 'formik';
+import * as Yup from 'yup';
+import { useSearchParams } from 'react-router-dom';
+import { fetchMovies } from '../../api/api';
 import MovieList from '../../components/MovieList/MovieList';
 
-export default function MoviesPage() {
-  const [movies, setMovies] = useState([]);
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+const searchValueSchema = Yup.object().shape({
+  search: Yup.string()
+    .min(3, 'Min 3 chars')
+    .max(30, 'Max 30 chars')
+    .required('This is a required field'),
+});
 
-  const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+export default function MoviesPage() {
+  const [collection, setCollection] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [searchParam, setSearchParam] = useSearchParams();
+  const query = searchParam.get('query') ?? '';
+
+  const handleSubmit = value => {
+    const newQuery = value.search;
+    const nextSearchParm = new URLSearchParams();
+
+    if (newQuery) {
+      nextSearchParm.set('query', newQuery);
+    } else {
+      nextSearchParm.delete('query');
+    }
+
+    setSearchParam(nextSearchParm);
+  };
 
   useEffect(() => {
-    const querySearch = searchParams.get('query') || '';
-    setQuery(querySearch);
-
-    if (!querySearch) {
-      setMovies([]);
+    if (!query) {
+      setCollection([]);
       return;
     }
 
-    async function fetchMovies() {
-      setLoading(true);
-      setError(null);
+    async function fetchRequestedMovie(query) {
       try {
-        const response = await searchMovie(querySearch);
-        setMovies(response.data.results);
-      } catch (err) {
-        setError('Failed to fetch movies. Try again.');
+        setLoading(true);
+        const response = await fetchMovies(query);
+        setCollection(response.data.results);
+      } catch (error) {
+        console.log('error', error);
       } finally {
         setLoading(false);
       }
     }
-
-    fetchMovies();
-  }, [searchParams]);
-
-  function handleSubmit(event) {
-    event.preventDefault();
-    if (!query.trim()) return;
-    setSearchParams({ query });
-  }
+    fetchRequestedMovie(query);
+  }, [query]);
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          autoComplete="off"
-          autoFocus
-          placeholder="Search movie"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-        />
-        <button type="submit">Search</button>
-      </form>
+    <div className="container">
+      {loading && <strong> Loading movies...</strong>}
 
-      {loading && <p>Loading...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {movies.length > 0 && (
-        <MovieList movies={movies} state={{ from: location }} />
-      )}
+      <Formik
+        initialValues={{ search: query ? query : '' }}
+        onSubmit={handleSubmit}
+        validationSchema={searchValueSchema}
+      >
+        <Form>
+          <Field type="text" name="search" className={css.input}></Field>
+          <button type="submit">Search</button>
+        </Form>
+      </Formik>
+      {collection.length > 0 && <MovieList collection={collection} />}
     </div>
   );
 }
